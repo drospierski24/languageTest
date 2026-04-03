@@ -91,6 +91,7 @@ def ask_replay(filepath):
             print("Replay audio? (y/n): ", end="", flush=True)
         else:
             break
+    return time.time()
 
 def check_answer(user_guess, correct_language):
     user_guess = user_guess.lower()
@@ -113,6 +114,8 @@ def main():
 
     score = 0
     total = len(files)
+    start = 0
+    end_time = 0
 
     print("\n=== Language Recognition Trainer ===")
     print(f"Loaded {total} audio samples.\n")
@@ -123,14 +126,13 @@ def main():
 
         ask_ready(i, total)
 
+        if(start == 0):
+            start = time.time()
+        start_time = time.time()
         play_audio_with_skip(filepath)
 
-        ask_replay(filepath)
-
-        start_time = time.time()
+        end_time = ask_replay(filepath)
         guess = input("Your guess: ").strip()
-        end_time = time.time()
-
         time_taken = round(end_time - start_time, 2)
 
         if check_answer(guess, correct_language):
@@ -142,6 +144,7 @@ def main():
     print("=== SESSION COMPLETE ===")
     print(f"Final Score: {score}/{total}")
     print(f"Accuracy: {round((score/total)*100, 2)}%")
+    print(f"Total Time: {round(end_time - start, 2)}s")
 
 if __name__ == "__main__":
     main()
