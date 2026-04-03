@@ -2,12 +2,14 @@ import os
 import random
 import pygame
 import time
+import keyboard
+import sys
 
 AUDIO_FOLDER = "audio"
 
 # Optional: allow multiple acceptable answers
 ACCEPTABLE_ANSWERS = {
-    "chinese": ["chinese", "mandarin"],
+    "mandarin": ["chinese", "mandarin"],
     "hindi": ["hindi", "urdu"],
     "korean": ["korean"],
     "japanese": ["japanese"],
@@ -26,6 +28,26 @@ ACCEPTABLE_ANSWERS = {
     "vietnamese": ["vietnamese"]
 }
 
+def clear_input_buffer():
+    try:
+        # Windows
+        import msvcrt
+        while msvcrt.kbhit():
+            msvcrt.getch()
+    except ImportError:
+        # Mac/Linux
+        import termios
+        termios.tcflush(sys.stdin, termios.TCIFLUSH)
+
+def wait_for_key(valid_keys):
+    while True:
+        for key in valid_keys:
+            if keyboard.is_pressed(key):
+                clear_input_buffer()
+                time.sleep(0.15)
+                return key
+        time.sleep(0.05)
+
 def init_audio():
     pygame.mixer.init()
 
@@ -36,22 +58,38 @@ def get_audio_files():
 def extract_language(filename):
     return filename.split("_")[0].lower()
 
-def play_audio(filepath):
+def play_audio_with_skip(filepath):
     pygame.mixer.music.load(filepath)
     pygame.mixer.music.play()
 
+    print("▶ Playing audio... (press 's' to skip)")
+
+    skipped = False
+
     while pygame.mixer.music.get_busy():
+        if not skipped and keyboard.is_pressed("s"):
+            pygame.mixer.music.stop()
+            clear_input_buffer()
+            time.sleep(.15)
+            print("⏭ Skipped!\n")
+            skipped = True
+            break
         time.sleep(0.1)
 
 def ask_ready(index, total):
     input(f"\n[{index}/{total}] Press ENTER when you're ready...")
 
 def ask_replay(filepath):
+    print("Replay audio? (y/n): ", end="", flush=True)
+
     while True:
-        replay = input("Replay audio? (y/n): ").strip().lower()
-        if replay == "y":
-            play_audio(filepath)
-        elif replay == "n":
+        key = wait_for_key(["y", "n"])
+        print(key)
+
+        if key == "y":
+            play_audio_with_skip(filepath)
+            print("Replay audio? (y/n): ", end="", flush=True)
+        else:
             break
 
 def check_answer(user_guess, correct_language):
@@ -85,8 +123,7 @@ def main():
 
         ask_ready(i, total)
 
-        print("▶ Playing audio...")
-        play_audio(filepath)
+        play_audio_with_skip(filepath)
 
         ask_replay(filepath)
 
